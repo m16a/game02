@@ -1,7 +1,13 @@
 from math import *
 from model.ActionType import ActionType
 from model.HockeyistType import HockeyistType
+from fsm import FSM
 
+class TacticType:
+	START   = 0
+	OFFENSE = 1
+	DEFENCE = 2
+	TIMEOUT = 3 
 
 class Coach:
 	def __init__(self):
@@ -19,12 +25,19 @@ class Coach:
 				min_dist = d
 				closest_id = h.id
 
-		if (closest_id == me.id):
-			return True
-		else:
-			return False
+		return closest_id == me.id
+
+	def isAttack(self, world):
+		return world.puck.owner_player_id == world.get_my_player().id and True #controlled pass must be here
 
 coach = Coach()
+fsm = FSM([(TacticType.START, TacticType.OFFENSE, ???),
+	       (TacticType.START, TacticType.DEFENSE, ???),
+	       (TacticType.OFFENSE, TacticType.DEFENSE, ???),
+	       (TacticType.DEFENCE, TacticType.OFFENSE, ???),
+	       ])
+
+#----------------------------------------------------------
 
 class MyStrategy:
 	def move(self, me, world, game, move):
