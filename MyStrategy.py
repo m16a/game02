@@ -101,6 +101,9 @@ class MyStrategy:
 	def getHockeyistByID(self, world,id):
 		return [x for x in world.hockeyists if x.id == id][0]
 
+	def canStrikeUnit(self, me, unit):
+		return me.get_distance_to_unit(unit) <= 120 and abs(me.get_angle_to_unit(unit)) <= pi / 12.0
+
 	#sheme [(my_id1, target_id1),...]
 	def defend(self, def_type, sheme, value, me, world, game, move):
 		if def_type == DefenceStrategy.PERSONAL:
@@ -113,13 +116,20 @@ class MyStrategy:
 			net_X = my_player.net_front
 			net_Y = 0.5 * (my_player.net_top + my_player.net_bottom)
 
-			koef = 0.5
+			koef = 0.9
 			dist_X = (koef * u.x + (1 - koef) * net_X)
 			dist_Y = (koef * u.y + (1 - koef) * net_Y)	
 			# self.moveToPoint(me, u.x, u.y, move)
+			
 			self.moveToPoint(me, dist_X, dist_Y, move)
 			
-			move.action = ActionType.TAKE_PUCK
+			if world.puck.owner_hockeyist_id == target_id:
+				if (self.canStrikeUnit(me, world.puck) or self.canStrikeUnit(me, u)):
+					move.action = ActionType.STRIKE
+				else:
+					move.action = ActionType.TAKE_PUCK
+			else:
+				move.action = ActionType.TAKE_PUCK
 
 		return move
 
