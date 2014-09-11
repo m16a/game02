@@ -22,19 +22,27 @@ class Coach:
 		my_h = [x for x in world.hockeyists if x.teammate and x.type != HockeyistType.GOALIE]
 		enemys = [x for x in world.hockeyists if not x.teammate and x.type != HockeyistType.GOALIE]
 
+		if len(my_h) != len(enemys): 
+			raise ValueError("bad teams size {0} - {1}".format(len(my_h), len(enemys)))
+
 		enemy_permutation = list(itertools.permutations(enemys))
 
 		# best = min(enemy_permutation, key = lambda x: for i in x )
-		min_d = 1000
+		min_d = 100000
 		best = None
 		for e in enemy_permutation:
 			d = 0
 			for i in range(0, len(enemys)):
 				d = d + my_h[i].get_distance_to_unit(e[i])
-
 			if d < min_d:
 				best = e
 				min_d = d
+
+		if best == None:
+			raise ValueError("personal defense computation failed bad best")
+
+		if len(best) != len(my_h):
+			raise ValueError("personal defense computation failed bad size {0} - {1}".format(len(my_h), len(best)))
 
 		sheme = []
 
@@ -76,22 +84,41 @@ fsm.start(TacticType.START)
 
 class MyStrategy:
 
+	def moveToPoint(self,me,x,y,move):
+		dist = me.get_distance_to(x,y)
+
+		angle = me.get_angle_to(x,y)
+		k = 1
+		if (angle < pi/2 and angle > -pi/2) or dist > 150:
+			move.turn = angle
+		else:
+			k = -1
+			move.turn = -angle
+
+		move.speed_up = (1.0 if dist > 75 else  dist / 75.0) * k
+
+
 	def getHockeyistByID(self, world,id):
 		return [x for x in world.hockeyists if x.id == id][0]
 
 	#sheme [(my_id1, target_id1),...]
 	def defend(self, def_type, sheme, value, me, world, game, move):
-		print sheme
 		if def_type == DefenceStrategy.PERSONAL:
 			target_id = [x[1] for x in sheme if x[0] == me.id][0]
 
-			move.speed_up = 1.0
-			angle = me.get_angle_to_unit(self.getHockeyistByID(world, target_id))
+			u = self.getHockeyistByID(world, target_id)
+			
+			my_player = world.get_my_player()
 
-			if (angle < pi):
-				move.turn = angle
-			else:
-				move.turn = -(2*pi - angle)
+			net_X = my_player.net_front
+			net_Y = 0.5 * (my_player.net_top + my_player.net_bottom)
+
+			koef = 0.5
+			dist_X = (koef * u.x + (1 - koef) * net_X)
+			dist_Y = (koef * u.y + (1 - koef) * net_Y)	
+			# self.moveToPoint(me, u.x, u.y, move)
+			self.moveToPoint(me, dist_X, dist_Y, move)
+			
 			move.action = ActionType.TAKE_PUCK
 
 		return move
@@ -99,7 +126,7 @@ class MyStrategy:
 	def move(self, me, world, game, move):
 
 		fsm.event(world)
-		print fsm.currentState
+		#print fsm.currentState
 
 		if (fsm.currentState == TacticType.DEFENCE):
 			# if (coach.need_I_take_puck(me, world)):
@@ -114,6 +141,14 @@ class MyStrategy:
 			strata = coach.getStrategy(world)
 			self.defend(strata[0], strata[1], None, me, world, game, move)
 		else:
-			move.action = ActionType.PASS
-			move.pass_power = 1.0
-			move.pass_angle = pi / 4.0
+
+			enemy = world.get_opponent_player()
+
+			net_X = enemy.net_front
+			net_Y = 0.5 * (enemy.net_top + enemy.net_bottom)
+
+			a = me.get_angle_to(net_X, net_Y)
+			move.turn = a
+			if (abs(a) < pi / 180.0):
+				move.action = ActionType.STRIKE
+			
