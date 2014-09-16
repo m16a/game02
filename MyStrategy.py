@@ -2,9 +2,16 @@ from math import *
 from model.ActionType import ActionType
 from model.HockeyistType import HockeyistType
 from fsm import FSM
-from coach import *
+import coach
+from coach import TacticType
+from coach import DefenceStrategy
 
-import vector
+from coach import Coach
+from predictor import Predictor
+
+
+
+from vector import Vector
 
 
 
@@ -16,14 +23,19 @@ predictor = None
 
 initedOnce = False
 def initSystems():
+	global initedOnce
 	if initedOnce:
 		return
 
-	global coach = Coach()
-	global predictor = Predictor()
+	print 'Inited'
 
-	
-	global initedOnce = True
+	global coach
+	coach = Coach()
+
+	global predictor
+#	predictor = Predictor()
+
+	initedOnce = True
 
 
 
@@ -92,6 +104,7 @@ class MyStrategy:
 
 	def move(self, me, world, game, move):
 
+		initSystems()
 		fsm.event(world)
 		#print fsm.currentState
 
